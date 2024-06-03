@@ -69,4 +69,29 @@ def filter_nonexisting_units(pairs, dict, units):
     return new_pairs, dict
 
 
+def generate_distance_to_centroid(centroids, units):
+        
+    distances = pd.read_csv("data/distances_b2b.csv")
+    distances.set_index('Block', inplace=True)
+    centroids = [int(centroid) for centroid in centroids]
+    
+    rows = distances.index.tolist() # Ints
+    cols = list(distances.columns) # Strings
+    
+    cent_dist = distances.loc[centroids]
+    return cent_dist
 
+
+def filter_closer_than_cent(v_list, u, cent, d):
+    filtered_list = []
+    for v in v_list:
+        try:
+            if d.loc[int(cent), str(int(v))] <= d.loc[int(cent), str(int(u))]:
+                filtered_list.append(v)
+            else:
+                continue
+        except:
+            # print("key error", v, u)
+            pass
+
+    return filtered_list
