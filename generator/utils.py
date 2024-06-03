@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 def map_centroid_to_zone(centroids, units):
     """
@@ -17,3 +18,55 @@ def map_centroid_to_zone(centroids, units):
         assert block in units
     
     return blocks
+
+def not_nan_or_none(x):
+    return x is not None and not (isinstance(x, float) and math.isnan(x))
+
+
+def generate_neighboring_pairs_and_dict():
+    """
+    Return a set of neighboring pairs in the form of tuples (id1, id2)
+
+    Returns:
+        _type_: set of tuples
+    """
+    neighbor_data = pd.read_csv("data/block_adjacency_matrix.csv")
+    
+    # Initialize an empty list to store the neighboring pairs
+    neighboring_pairs = []
+    neighbor_dict = {}
+
+    # Iterate over each row in the DataFrame
+    for row in neighbor_data.itertuples(index=False):
+        # The first element is the neighbor for all other elements in the row
+        main_id = row[0]
+        neighbors = row[1:]
+        # Remove NaN values using filter
+        cleaned_list = list(filter(not_nan_or_none, neighbors))
+        
+        for neighbor_id in cleaned_list:
+            neighboring_pairs.append((main_id, neighbor_id))
+        
+        values = list(cleaned_list)
+        neighbor_dict[main_id] = values
+            
+    return set(neighboring_pairs), neighbor_dict
+
+def filter_nonexisting_units(pairs, dict, units):
+    new_pairs = []
+    for u, v in pairs:
+        if u in units and v in units:
+            new_pairs.append((u, v))
+        if u not in units and u in dict:
+            del dict[u]
+            if v in dict:
+                dict[v].remove(u)
+        if v not in units and v in dict:
+            del dict[v]
+            if u in dict:
+                dict[u].remove(v)
+
+    return new_pairs, dict
+
+
+

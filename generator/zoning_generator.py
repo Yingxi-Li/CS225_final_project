@@ -1,6 +1,8 @@
 import geopandas as gpd
 import pandas as pd
 
+from utils import map_centroid_to_zone, generate_neighboring_pairs_and_dict, filter_nonexisting_units
+
 class SchoolZoning(object):
     def __init__(self, file):
 
@@ -17,6 +19,7 @@ class SchoolZoning(object):
         self.index_unit_map = dict(zip(self.area_data['index'], units))
         # The reverse of the above mapping
         self.unit_index_map = dict(zip(units, self.area_data['index'])) 
+        self.unit_indices = self.area_data['index']
         
         # Number of students in units (area)
         # Dictionary with key as unit (area) and value as number of students in that unit
@@ -34,58 +37,74 @@ class SchoolZoning(object):
         # File to write in
         self.file = file
         
-        # Number of zones
-        self.Z = 4
+        # Centroids of zones in census ID
+        centroid_schools = [670, 593, 497, 723]
+        self.Z = len(centroid_schools)
+        self.centroids = map_centroid_to_zone(centroid_schools, units)
         
-        # Centroids of zones
-        self.centroids = map_centroid_to_zone([497, 456, 838, 507, 625, 830, 453], self.units)
+        # Neighbor data
+        neighbor_pairs, neighbor_dict = generate_neighboring_pairs_and_dict()
+        self.neighbor_pairs, self.neighbor_dict = filter_nonexisting_units(neighbor_pairs, neighbor_dict, units)
         
-    def add_variables_and_objective(self):
+        # Number of schools
+        self.SCH = self.area_data['number_of_schools'].sum()
+        
+        
+    def add_objective(self):
         
         self.file.write("Minimize\n obj: ")
-        self.file.write(" + ".join(f"{str(distances[i][j])} x{i+1}{j+1}" for i in range(n) for j in range(n) if i != j))
+        self.file.write(" + ".join(f"d{self.unit_index_map[float(u)]}_{self.unit_index_map[float(v)]}" for u, v in self.neighbor_pairs))
         self.file.write("\nSubject To\n")
         
-        # Each city must be entered exactly once
-        for i in range(1, n+1):
-            self.file.write(f" c{i}: " + " + ".join(f"x{i}{j}" for j in range(1, n+1) if i != j) + " = 1\n")
+    def add_feasibility_constraints(self):
+        # Each area is assigned to 1 zone
+        c_count = 1
+        for u in self.unit_indices:
+            self.file.write(f" c{c_count}: " + " + ".join(f"x{u}_{z}" for z in range(self.Z)) + " = 1\n")
+            c_count += 1
         
-        # Each city must be left exactly once
-        for j in range(1, n+1):
-            self.file.write(f" c{n+j}: " + " + ".join(f"x{i}{j}" for i in range(1, n+1) if i != j) + " = 1\n")
+        # Compactness constraint
+        for u, v in self.neighbor_pairs:
+            for z in range(self.Z):
+                u_id = self.unit_index_map[u]
+                v_id = self.unit_index_map[v]
+                self.file.write(f" c{c_count}: x{u_id}_{z} - x{v_id}_{z} - b{u_id}_{v_id} <= 0\n")
+                self.file.write(f" c{c_count}: x{u_id}_{z} - x{v_id}_{z} + b{u_id}_{v_id} >= 0\n")
+                c_count += 1
+                
+        # Contiguity cosntraint
+        # for u in self.unit_indices:
+        #     for z in range(self.Z):
+        #         v_list = [] # TODO: Get neighbors of u
+        #         self.file.write(f" c{c_count}: x{u}_{z} <= " + " + ".join(f"x{v}_{z}" for v in v_list) + "\n")
+        #         c_count += 1
         
-        # MTZ constraints
-        constraint_count = 2 * n
-        for i in range(2, n+1):
-            for j in range(2, n+1):
-                if i != j:
-                    file.write(f" u{i}u{j}: u{i} - u{j} + {n} x{i}{j} <= {n-1}\n")
-                    constraint_count += 1
-
-        file.write("Bounds\n")
-        for i in range(1, n+1):
-            for j in range(1, n+1):
-                if i != j:
-                    file.write(f" 0 <= x{i}{j} <= 1\n")
-        
-        file.write("Binaries\n")
-        for i in range(1, n+1):
-            for j in range(1, n+1):
-                if i != j:
-                    file.write(f" x{i}{j}\n")
+    
+    def add_balancing_constraints(self):
+        # Add seat balancing constraint
+        pass
+    
+        # Add number of school balancing constraint
+        pass
+    
+    def add_variables_and_end(self):
+        self.file.write("Binaries\n")
+        for u in self.unit_indices:
+            for z in range(self.Z):
+                self.file.write(f" x{u}_{z}\n")
                     
-        file.write("General\n")
-        for i in range(2, n+1):
-            file.write(f" u{i}\n")
+        for u, v in self.neighbor_pairs:
+            u_id, v_id = self.unit_index_map[u], self.unit_index_map[v]
+            self.file.write(f" b{u_id}_{v_id}\n")
         
-        file.write("End\n")
+        self.file.write("End\n")
         
         
 if __name__ == "__main__":
-    sz = SchoolZoning(None)
-    # with open("school_zoning.lp", "w") as file:
-    #     sz = SchoolZoning(file)
-    #     sz.add_variables_and_objective()
-
-
-    
+    with open("lp_test_files/school_zoning.lp", "w") as f:
+        school_zoning = SchoolZoning(f)
+        school_zoning.add_objective()
+        school_zoning.add_feasibility_constraints()
+        # school_zoning.add_balancing_constraints()
+        school_zoning.add_variables_and_end()
+        
