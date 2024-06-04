@@ -4,11 +4,11 @@ channels:
   - conda-forge
 
 dependencies:
-  - python=3.9.7
+  - python
   - jupyter
   - ipykernel
-  - ecole=0.7.3
+  - ecole
   - numpy
   - pytorch
   - pyg
-  - mkl < 2022
+  - mkl < 2022  

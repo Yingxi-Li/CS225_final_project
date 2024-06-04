@@ -69,9 +69,9 @@ def generate_school_data(n, m, c_i, s_j):
 class SchoolZoning(object):
     def __init__(self, file):
         
-        n = 10  # Size of the grid map (n x n)
-        m = 10  # Number of zones to build schools
-        c_i = 50  # Capacity of each school
+        n = 6  # Size of the grid map (n x n)
+        m = 6  # Number of zones to build schools
+        c_i = 30  # Capacity of each school
         s_j = 5  # Maximum number of students in each zone
 
         school_df, neighboring_pairs, neighbors_dict, distance_matrix, centroids = generate_school_data(n, m, c_i, s_j)
@@ -144,7 +144,8 @@ class SchoolZoning(object):
                 v_list = self.neighbor_dict[u] # List in census block id 
                 v_list = filter_closer_than_cent_pseudo(v_list, u, cent, self.d) 
                 
-                self.file.write(f" c{self.c_count}: x{u}_{z} - " + " - ".join(f"x{v}_{z}" for v in v_list) + " <= 0 \n")
+                if v_list != []:
+                    self.file.write(f" c{self.c_count}: x{u}_{z} - " + " - ".join(f"x{v}_{z}" for v in v_list) + " <= 0 \n")
                 self.c_count += 1
         print("Contiguity constraint added")
         
@@ -181,9 +182,10 @@ class SchoolZoning(object):
         
 
 if __name__ == "__main__":
-    with open(f"lp_test_files/zone_pseudo.lp", "w") as f:
-        school_zoning = SchoolZoning(f)
-        school_zoning.add_objective()
-        school_zoning.add_feasibility_constraints()
-        school_zoning.add_balancing_constraints()
-        school_zoning.add_variables_and_end()
+    for i in range(10):
+        with open(f"lp_test_files/zone_pseudo_{i}.lp", "w") as f:
+            school_zoning = SchoolZoning(f)
+            school_zoning.add_objective()
+            school_zoning.add_feasibility_constraints()
+            school_zoning.add_balancing_constraints()
+            school_zoning.add_variables_and_end()

@@ -95,7 +95,8 @@ class SchoolZoning(object):
                 v_list = filter_closer_than_cent(v_list, self.index_unit_map[u], cent, self.d)
                 v_list = [self.unit_index_map[v] for v in v_list]
                 
-                self.file.write(f" c{self.c_count}: x{u}_{z} - " + " - ".join(f"x{v}_{z}" for v in v_list) + " <= 0 \n")
+                if v_list != []:
+                    self.file.write(f" c{self.c_count}: x{u}_{z} - " + " - ".join(f"x{v}_{z}" for v in v_list) + " <= 0 \n")
                 # if v_list != []:
                 #     print(f" c{self.c_count}: x{u}_{z} - " + " - ".join(f"x{v}_{z}" for v in v_list) + " <= 0 \n")
                 self.c_count += 1
