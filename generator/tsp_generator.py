@@ -1,11 +1,10 @@
 import random
 
 # Number of cities
-n = 50
+n = 5000
 
 # Generate random distances (for demonstration purposes)
 distances = [[random.randint(1, 100) for _ in range(n)] for _ in range(n)]
-print(distances[1][2])
 
 with open("tsp.lp", "w") as file:
     file.write("Minimize\n obj: ")

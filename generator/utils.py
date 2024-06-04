@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+import numpy as np
 
 def map_centroid_to_zone(centroids, units):
     """
@@ -93,5 +94,14 @@ def filter_closer_than_cent(v_list, u, cent, d):
         except:
             # print("key error", v, u)
             pass
+
+    return filtered_list
+
+def filter_closer_than_cent_pseudo(v_list, u, cent, d_pseudo):
+    
+    filtered_list = []
+    for v in v_list:
+        if d_pseudo.loc[cent, v] <= d_pseudo.loc[cent, u]:
+            filtered_list.append(v)
 
     return filtered_list

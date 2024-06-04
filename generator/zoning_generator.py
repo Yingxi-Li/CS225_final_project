@@ -5,12 +5,15 @@ from utils import map_centroid_to_zone, \
         generate_neighboring_pairs_and_dict, \
         filter_nonexisting_units, generate_distance_to_centroid, \
         filter_closer_than_cent
+from partial_map import generate_partial_map
 
 class SchoolZoning(object):
     def __init__(self, file, centroids=[670, 593, 497, 723]):
 
         # Load area data
         self.area_data = pd.read_csv("data/area_data.csv")
+        # self.area_data = self.area_data["Tract" in generate_partial_map()]
+        # print("Number of blocks: ", len(self.area_data))
         
         # There exists a few duplicated census blocks, we remove them
         self.area_data = self.area_data.drop_duplicates(subset='census_block')
